@@ -6,6 +6,7 @@ const router = Router();
 router.post("/submit-drug", drugController.submitDrugRequest);
 router.post("/save-drug-data", drugController.saveDrugData);
 
-router.get("/:transactionId", drugController.getDrugDetails); 
+router.get("/:transactionId", drugController.getDrugDetails);
+router.get("/", drugController.getAllDrugs);
 
 export default router;

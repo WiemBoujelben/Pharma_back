@@ -84,4 +84,4 @@ const registerUser = async (wallet, role) => {
     }
   };
 
-export default { approveUser,registerUser,isUserRegistered,submitDrug ,submitSignedTx,generateUnsignedTx};
+export default { approveUser,registerUser,isUserRegistered};

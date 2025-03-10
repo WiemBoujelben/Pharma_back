@@ -1,5 +1,15 @@
 import Drug from "../models/Drug.js";
 import hederaService from "../services/hederaService.js";
+const getAllDrugs = async (req, res) => {
+  try {
+    const drugs = await Drug.find(); // Fetch all drugs from MongoDB
+    res.status(200).json(drugs);
+  } catch (err) {
+    console.error("Error fetching drugs:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+// Fetch drug details by transactionId
 const getDrugDetails = async (req, res) => {
   const { transactionId } = req.params;
 
@@ -15,6 +25,8 @@ const getDrugDetails = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+
 
 // Generate unsigned transaction
 const submitDrugRequest = async (req, res) => {
@@ -73,4 +85,4 @@ const saveDrugData = async (req, res) => {
 
 
 
-export default { submitDrugRequest ,getDrugDetails,saveDrugData};
+export default { submitDrugRequest ,getDrugDetails,saveDrugData,getAllDrugs};
