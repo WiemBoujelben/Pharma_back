@@ -10,78 +10,118 @@ const contractId = process.env.CONTRACT_ID;
 
 
 const isUserRegistered = async (wallet) => {
-    try {
-        console.log("Checking if user is registered in smart contract:", wallet);
-        const query = new ContractCallQuery()
-            .setContractId(contractId)
-            .setGas(100000)
-            .setFunction("isUserRegistered", new ContractFunctionParameters().addAddress(wallet));
+  try {
+      console.log("Checking if user is registered in smart contract:", wallet);
 
-        const tx = await query.execute(client);
-        const result = tx.getBool(0); // Assuming the function returns a boolean
-        console.log("User registration status:", result);
-        return result;
-    } catch (err) {
-        console.error("Error checking user registration:", err);
-        throw err;
-    }
+      // Create a query to call the isUserRegistered function
+      const query = new ContractCallQuery()
+          .setContractId(contractId) // Set the contract ID
+          .setGas(100000) // Set gas limit
+          .setFunction(
+              "isUserRegistered", // Function name
+              new ContractFunctionParameters().addAddress(wallet) // Function parameters
+          );
+
+      // Execute the query
+      const tx = await query.execute(client);
+
+      // Get the result (boolean)
+      const result = tx.getBool(0); // Assuming the function returns a boolean
+      console.log("User registration status:", result);
+
+      return result; // Return the result (true or false)
+  } catch (err) {
+      console.error("Error checking user registration:", err);
+      throw err;
+  }
 };
 const approveUser = async (wallet) => {
-    try {
+  try {
       console.log("Approving user in smart contract:", wallet);
+
+      // Check if user is registered
+      const isRegistered = await isUserRegistered(wallet);
+      if (!isRegistered) {
+          throw new Error("Wallet is not registered in the smart contract");
+      }
+
+      // Proceed with approval
       const tx = await new ContractExecuteTransaction()
-        .setContractId(contractId)
-        .setGas(100000)
-        .setFunction("approveUser", new ContractFunctionParameters().addAddress(wallet))
-        .execute(client);
-  
+          .setContractId(contractId)
+          .setGas(200000)
+          .setFunction("approveUser", new ContractFunctionParameters().addAddress(wallet))
+          .execute(client);
+
       const receipt = await tx.getReceipt(client);
       console.log("Transaction receipt:", receipt.status.toString());
-  
+
+      if (receipt.status.toString() === "CONTRACT_REVERT_EXECUTED") {
+          throw new Error("Smart contract reverted the transaction. Check contract conditions.");
+      }
+
       // Generate HashScan link
       const transactionId = tx.transactionId.toString();
       const hashScanLink = `https://hashscan.io/testnet/transaction/${transactionId}`;
-  
+
       return {
-        status: receipt.status.toString(),
-        transactionId,
-        hashScanLink,
+          status: receipt.status.toString(),
+          transactionId,
+          hashScanLink,
       };
-    } catch (err) {
+  } catch (err) {
       console.error("Error approving user:", err);
       throw err;
-    }
-  };
+  }
+};
 const registerUser = async (wallet, role) => {
-    try {
+  try {
       console.log("Registering user in smart contract:", wallet, "Role:", role);
+
+      // Validate wallet address
+      if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+          throw new Error("Invalid wallet address");
+      }
+
+      // Validate role
+      const validRoles = ["Manufacturer", "Distributor", "PublicPharmacy", "PrivatePharmacy"];
+      if (!validRoles.includes(role)) {
+          throw new Error("Invalid role");
+      }
+
+      // Convert role to uint8
+      const roleIndex = validRoles.indexOf(role);
+
       const tx = await new ContractExecuteTransaction()
-        .setContractId(contractId)
-        .setGas(100000)
-        .setFunction(
-          "registerUser",
-          new ContractFunctionParameters()
-            .addAddress(wallet) // Wallet address
-            .addUint8(role) // User role (e.g., 1 for Manufacturer, 2 for Distributor, etc.)
-        )
-        .execute(client);
-  
+          .setContractId(contractId)
+          .setGas(100000)
+          .setFunction(
+              "registerUser",
+              new ContractFunctionParameters()
+                  .addAddress(wallet) // Wallet address
+                  .addUint8(roleIndex) // Role as uint8
+          )
+          .execute(client);
+
       const receipt = await tx.getReceipt(client);
       console.log("Transaction receipt:", receipt.status.toString());
-  
+
+      if (receipt.status.toString() === "CONTRACT_REVERT_EXECUTED") {
+          throw new Error("Smart contract reverted the transaction. Check contract conditions.");
+      }
+
       // Generate HashScan link
       const transactionId = tx.transactionId.toString();
       const hashScanLink = `https://hashscan.io/testnet/transaction/${transactionId}`;
-  
+
       return {
-        status: receipt.status.toString(),
-        transactionId,
-        hashScanLink,
+          status: receipt.status.toString(),
+          transactionId,
+          hashScanLink,
       };
-    } catch (err) {
+  } catch (err) {
       console.error("Error registering user:", err);
       throw err;
-    }
-  };
+  }
+};
 
 export default { approveUser,registerUser,isUserRegistered};
