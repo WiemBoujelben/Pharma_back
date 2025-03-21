@@ -1,28 +1,44 @@
 import User from "../models/User.js";
-import hederaService from "../services/hederaService.js";
-
 
 const registerUser = async (req, res) => {
-  const { wallet, role } = req.body;
-  console.log("Registering user:", wallet, role); // Debug log
-  try {
-      const { status, transactionId, hashScanLink } = await hederaService.registerUser(wallet, role);
-      console.log("Smart contract registration result:", { status, transactionId, hashScanLink }); // Debug log
-
-      const user = new User({ wallet, role, registrationTransactionId: transactionId, registrationHashScanLink: hashScanLink });
-      await user.save();
-      console.log("User saved to MongoDB:", user); // Debug log
-
-      res.status(201).json({
-          message: "User registered successfully",
-          user,
-          transactionId,
-          hashScanLink,
+    const { wallet, role, transactionId, hashScanLink } = req.body;
+  
+    console.log("Received registration request:", { wallet, role, transactionId, hashScanLink }); // Debug log
+  
+    try {
+      // Validate input
+      if (!wallet || !role || !transactionId || !hashScanLink) {
+        throw new Error("Missing required fields");
+      }
+  
+      // Check if the user already exists
+      const existingUser = await User.findOne({ wallet });
+      if (existingUser) {
+        throw new Error("User already registered");
+      }
+  
+      // Save the user to MongoDB
+      const user = new User({
+        wallet,
+        role,
+        registrationTransactionId: transactionId,
+        registrationHashScanLink: hashScanLink,
       });
-  } catch (err) {
-      console.error("Registration error:", err); // Debug log
+  
+      await user.save();
+  
+      console.log("User saved successfully:", user); // Debug log
+  
+      res.status(201).json({
+        message: "User registered successfully",
+        user,
+        transactionId,
+        hashScanLink,
+      });
+    } catch (err) {
+      console.error("Error in registerUser:", err); // Debug log
       res.status(500).json({ message: err.message || "An error occurred during registration" });
-  }
-};
+    }
+  };
 
 export default { registerUser };

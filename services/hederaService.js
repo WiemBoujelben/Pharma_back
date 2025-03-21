@@ -73,55 +73,6 @@ const approveUser = async (wallet) => {
       throw err;
   }
 };
-const registerUser = async (wallet, role) => {
-  try {
-      console.log("Registering user in smart contract:", wallet, "Role:", role);
 
-      // Validate wallet address
-      if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-          throw new Error("Invalid wallet address");
-      }
 
-      // Validate role
-      const validRoles = ["Manufacturer", "Distributor", "PublicPharmacy", "PrivatePharmacy"];
-      if (!validRoles.includes(role)) {
-          throw new Error("Invalid role");
-      }
-
-      // Convert role to uint8
-      const roleIndex = validRoles.indexOf(role);
-
-      const tx = await new ContractExecuteTransaction()
-          .setContractId(contractId)
-          .setGas(100000)
-          .setFunction(
-              "registerUser",
-              new ContractFunctionParameters()
-                  .addAddress(wallet) // Wallet address
-                  .addUint8(roleIndex) // Role as uint8
-          )
-          .execute(client);
-
-      const receipt = await tx.getReceipt(client);
-      console.log("Transaction receipt:", receipt.status.toString());
-
-      if (receipt.status.toString() === "CONTRACT_REVERT_EXECUTED") {
-          throw new Error("Smart contract reverted the transaction. Check contract conditions.");
-      }
-
-      // Generate HashScan link
-      const transactionId = tx.transactionId.toString();
-      const hashScanLink = `https://hashscan.io/testnet/transaction/${transactionId}`;
-
-      return {
-          status: receipt.status.toString(),
-          transactionId,
-          hashScanLink,
-      };
-  } catch (err) {
-      console.error("Error registering user:", err);
-      throw err;
-  }
-};
-
-export default { approveUser,registerUser,isUserRegistered};
+export default { approveUser,isUserRegistered};

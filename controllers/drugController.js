@@ -27,34 +27,6 @@ const getDrugDetails = async (req, res) => {
 };
 
 
-
-// Generate unsigned transaction
-const submitDrugRequest = async (req, res) => {
-  const { name, price, expiryDate, countryOfOrigin, countryOfProvenance, wallet } = req.body;
-
-  try {
-    // Generate unsigned transaction data
-    const transactionHex = await hederaService.generateUnsignedTx({
-      name,
-      price,
-      expiryDate,
-      countryOfOrigin,
-      countryOfProvenance,
-      wallet,
-    });
-
-    res.status(200).json({
-      message: "Unsigned transaction generated",
-      transactionHex, // Send the hex-encoded transaction to the frontend
-    });
-  } catch (err) {
-    console.error("Error generating unsigned transaction:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-
-
 const saveDrugData = async (req, res) => {
   const { name, price, expiryDate, countryOfOrigin, countryOfProvenance, transactionId, hashScanLink } = req.body;
 
@@ -85,4 +57,4 @@ const saveDrugData = async (req, res) => {
 
 
 
-export default { submitDrugRequest ,getDrugDetails,saveDrugData,getAllDrugs};
+export default {getDrugDetails,saveDrugData,getAllDrugs};
