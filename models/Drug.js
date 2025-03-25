@@ -6,8 +6,18 @@ const drugSchema = new mongoose.Schema({
   expiryDate: { type: Number, required: true },
   countryOfOrigin: { type: String, required: true },
   countryOfProvenance: { type: String, required: true },
-  transactionId: { type: String, required: true }, // Store the transaction ID
-  hashScanLink: { type: String, required: true }, // Store the HashScan link
+  transactionId: { type: String, required: true },
+  hashScanLink: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  pctCode: { type: String, default: null },
+  currentHolder: { type: String, required: true },
+  history: [
+    {
+      holder: { type: String, required: true },
+      timestamp: { type: Number, required: true },
+      role: { type: String, required: true }
+    }
+  ]
 });
 
 const Drug = mongoose.model("Drug", drugSchema);
