@@ -131,9 +131,74 @@ const verifyDrug = async (req, res) => {
   }
 };
 
+// Approve drug
+const approveDrug = async (req, res) => {
+  const { transactionId } = req.params;
+  const { pctCode, transactionId: approvalTxId, approvedBy } = req.body;
+
+  try {
+    const drug = await Drug.findOne({ transactionId });
+    if (!drug) {
+      return res.status(404).json({ message: "Drug not found" });
+    }
+
+    drug.status = "Approved";
+    drug.pctCode = pctCode;
+    drug.approvalTransactionId = approvalTxId;
+    drug.approvalHashScanLink = `https://hashscan.io/testnet/transaction/${approvalTxId}`;
+    
+    // Add approval to history
+    drug.history.push({
+      holder: approvedBy,
+      timestamp: Math.floor(Date.now() / 1000),
+      role: "CentralPharmacy"
+    });
+
+    await drug.save();
+    res.status(200).json({ message: "Drug approved successfully", drug });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Reject drug
+const rejectDrug = async (req, res) => {
+  const { transactionId } = req.params;
+  const { transactionId: rejectionTxId, rejectedBy } = req.body;
+
+  try {
+    const drug = await Drug.findOne({ transactionId });
+    if (!drug) {
+      return res.status(404).json({ message: "Drug not found" });
+    }
+
+    drug.status = "Rejected";
+    drug.rejectionTransactionId = rejectionTxId;
+    drug.rejectionHashScanLink = `https://hashscan.io/testnet/transaction/${rejectionTxId}`;
+    
+    // Add rejection to history
+    drug.history.push({
+      holder: rejectedBy,
+      timestamp: Math.floor(Date.now() / 1000),
+      role: "CentralPharmacy-Rejected"
+    });
+
+    await drug.save();
+    res.status(200).json({ message: "Drug rejected successfully", drug });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// Update the exports at the bottom:
 export default { 
   getDrugDetails, 
   saveDrugData, 
   getAllDrugs,
-  verifyDrug
+  verifyDrug,
+  
+  approveDrug,
+  rejectDrug,
+ // Add this
 };
