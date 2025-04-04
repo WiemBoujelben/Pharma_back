@@ -189,11 +189,39 @@ const rejectDrug = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
+const getInventory = async (req, res) => {
+  console.log("getInventory controller function called");
+  try {
+    const drugs = await Drug.find({ status: "Approved" });
+    console.log(`Found ${drugs.length} inventory drugs`);
+    return res.status(200).json(drugs); // Explicit return
+  } catch (err) {
+    console.error("Error in getInventory:", err);
+    return res.status(500).json({ 
+      message: err.message,
+      error: err.stack 
+    });
+  }
+};
+const getPendingDrugs = async (req, res) => {
+  console.log("getPendingDrugs controller function called");
+  try {
+    const drugs = await Drug.find({ status: "Pending" });
+    console.log(`Found ${drugs.length} pending drugs`);
+    return res.status(200).json(drugs); // Explicit return
+  } catch (err) {
+    console.error("Error in getPendingDrugs:", err);
+    return res.status(500).json({ 
+      message: err.message,
+      error: err.stack 
+    });
+  }
+};
 // Update the exports at the bottom:
-export default { 
+export default {
+  getPendingDrugs, 
   getDrugDetails, 
+  getInventory, 
   saveDrugData, 
   getAllDrugs,
   verifyDrug,

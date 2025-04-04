@@ -1,7 +1,85 @@
 import User from "../models/User.js";
 import Drug from "../models/Drug.js";
 import hederaService from "../services/hederaService.js";
+import { 
+  storeDrugMetadata, 
+  generateQRCode,
+  retrieveDrugMetadata
+} from "../services/ipfsService.js";
 
+export const saveAdminDrugData = async (req, res) => {
+  const { 
+    name, price, expiryDate, countryOfOrigin, 
+    countryOfProvenance, quantity, transactionId, 
+    hashScanLink, currentHolder, pctCode
+  } = req.body;
+
+  try {
+    // Prepare metadata for IPFS
+    const metadata = {
+      name,
+      price,
+      expiryDate,
+      countryOfOrigin,
+      countryOfProvenance,
+      quantity,
+      transactionId,
+      centralPharmacy: currentHolder,
+      pctCode,
+      timestamp: Math.floor(Date.now() / 1000)
+    };
+
+    // Store metadata to IPFS
+    const cid = await storeDrugMetadata(metadata);
+    
+    // Generate QR code
+    const qrCodePath = await generateQRCode(cid, name);
+
+    const drug = new Drug({
+      name,
+      price,
+      expiryDate,
+      countryOfOrigin,
+      countryOfProvenance,
+      quantity,
+      transactionId,
+      hashScanLink,
+      currentHolder,
+      pctCode,
+      history: [{
+        holder: currentHolder,
+        timestamp: Math.floor(Date.now() / 1000),
+        role: "CentralPharmacy"
+      }],
+      status: "Approved",
+      cid,
+      qrCodePath
+    });
+
+    await drug.save();
+    res.status(200).json({ 
+      message: "Admin drug data saved successfully", 
+      drug,
+      qrCodeUrl: qrCodePath
+    });
+  } catch (err) {
+    console.error("Error saving admin drug data:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getAllAdminDrugs = async (req, res) => {
+  try {
+    // Get drugs submitted by admin (where initial holder is CentralPharmacy)
+    const drugs = await Drug.find({
+      "history.0.role": "CentralPharmacy"
+    });
+    res.status(200).json(drugs);
+  } catch (err) {
+    console.error("Error fetching admin drugs:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
 // Use named exports
 export const approveUserRequest = async (req, res) => {
     const { wallet } = req.body;
