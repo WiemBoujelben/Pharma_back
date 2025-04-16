@@ -6,33 +6,42 @@ dotenv.config();
 
 const login = async (req, res) => {
   const { wallet } = req.body;
-  console.log("Login request received for wallet:", wallet); // Debug log
+  const walletLower=wallet.toLowerCase();
+  console.log("Login request received for wallet:", wallet);
   try {
     // Check if the wallet address matches the admin's wallet address
     if (wallet === process.env.ADMIN_WALLET) {
-      console.log("Admin wallet matched:", wallet); // Debug log
-      req.session.wallet = wallet; // Store wallet in session
-      req.session.role = "admin";  // Store role in session
-      req.session.isApproved = true; // Admin is always approved
-      console.log("Admin session set:", req.session); // Log session
-      return res.status(200).json({ message: "Admin login successful", isAdmin: true });
+      console.log("Admin wallet matched:", wallet);
+      req.session.wallet = wallet;
+      req.session.role = "admin";
+      req.session.isApproved = true;
+      console.log("Admin session set:", req.session);
+      return res.status(200).json({ 
+        message: "Admin login successful", 
+        isAdmin: true,
+        role: "admin"
+      });
     }
 
     // For non-admin users, check the database
-    const user = await User.findOne({ wallet });
+    const user = await User.findOne({ wallet: walletLower });
     if (!user) {
-      console.log("User not found for wallet:", wallet); // Debug log
+      console.log("User not found for wallet:", walletLower);
       return res.status(404).json({ message: "User not found. Please register first." });
     }
 
-    req.session.wallet = wallet; // Store wallet in session
-    req.session.role = user.role; // Store role from the database
-    req.session.isApproved = user.isApproved; // Store approval status from the database
-    console.log("User session set:", req.session); // Log session
+    req.session.wallet = walletLower;
+    req.session.role = user.role;
+    req.session.isApproved = user.isApproved;
+    console.log("User session set:", req.session);
 
-    res.status(200).json({ message: "Login successful", isAdmin: false });
+    res.status(200).json({ 
+      message: "Login successful", 
+      isAdmin: false,
+      role: user.role  // Include the role in the response
+    });
   } catch (err) {
-    console.error("Login error:", err); // Debug log
+    console.error("Login error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -113,4 +122,26 @@ const checkManufacturer = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-export default { login, register, getPendingRequests, approveUser, checkAdmin, checkManufacturer };
+const checkDistributor = async (req, res) => {
+  try {
+    const wallet = req.session.wallet; // Get wallet from session
+    const user = await User.findOne({ wallet });
+    if (!user || user.role !== "Distributor" || !user.isApproved) {
+      return res.status(403).json({ isApproved: false });
+    }
+    res.status(200).json({ isApproved: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Update the exports to include the new function
+export default { 
+  login, 
+  register, 
+  getPendingRequests, 
+  approveUser, 
+  checkAdmin, 
+  checkManufacturer,
+  checkDistributor 
+};

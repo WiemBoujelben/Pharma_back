@@ -17,5 +17,14 @@ const verifyManufacturer = (req, res, next) => {
 };
 
 
-// Export as named exports
-export { verifyAdmin, verifyManufacturer };
+const verifyDistributor = (req, res, next) => {
+  console.log("Session in verifyDistributor:", req.session); // Log session
+  if (req.session.role === "Distributor" && req.session.isApproved) {
+    next(); // Allow the request to proceed
+  } else {
+    res.status(403).json({ message: "Access denied. Only approved distributors can access this route." });
+  }
+};
+
+// Update the exports to include the new middleware
+export { verifyAdmin, verifyManufacturer, verifyDistributor };
