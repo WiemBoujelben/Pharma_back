@@ -7,6 +7,30 @@ import {
   retrieveDrugMetadata
 } from "../services/ipfsService.js";
 
+// Add to your drugController.js
+const getQRCode = async (req, res) => {
+  const { cid } = req.params;
+  try {
+    const drug = await Drug.findOne({ cid });
+    if (!drug) {
+      return res.status(404).json({ message: "Drug not found" });
+    }
+
+    // Construct filename pattern you're using
+    const safeName = drug.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeName}_${cid}.png`;
+    const filePath = path.join(__dirname, '../public/qrcodes', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "QR code not found" });
+    }
+
+    res.sendFile(filePath);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getAllDrugs = async (req, res) => {
   try {
     const drugs = await Drug.find();
@@ -225,7 +249,7 @@ export default {
   saveDrugData, 
   getAllDrugs,
   verifyDrug,
-  
+  getQRCode,
   approveDrug,
   rejectDrug,
  // Add this

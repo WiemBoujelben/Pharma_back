@@ -11,6 +11,7 @@ router.get("/inventory", drugController.getInventory);
 router.get("/:transactionId", drugController.getDrugDetails);
 router.get("/", drugController.getAllDrugs);
 router.get("/pending",drugController.getPendingDrugs);
+router.get('/qrcode/:cid', drugController.getQRCode);
 
 router.post("/:transactionId/approve", drugController.approveDrug);
 router.post("/:transactionId/reject", drugController.rejectDrug);

@@ -1,12 +1,116 @@
 import User from "../models/User.js";
 import Drug from "../models/Drug.js";
-import hederaService from "../services/hederaService.js";
+import Order from "../models/Order.js";
 import { 
   storeDrugMetadata, 
   generateQRCode,
   retrieveDrugMetadata
 } from "../services/ipfsService.js";
+//order management
+// Get pending orders
+export const getPendingOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: "Requested" })
+      .populate('drugId', 'name price quantity pctCode currentHolder');
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
+// Approve order
+export const approveOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { transactionId, approvedBy } = req.body;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "Requested") {
+      return res.status(400).json({ message: "Order is not in requested state" });
+    }
+
+    // Update order status
+    order.status = "Approved";
+    order.approvalTransactionId = transactionId;
+    order.approvalHashScanLink = `https://hashscan.io/testnet/transaction/${transactionId}`;
+    order.approvedBy = approvedBy;
+    await order.save();
+
+    // Update drug status
+    await Drug.findByIdAndUpdate(order.drugId, {
+      orderStatus: "Approved",
+      currentHolder: order.distributor,
+      $push: {
+        history: {
+          holder: order.distributor,
+          timestamp: Math.floor(Date.now() / 1000),
+          role: "Distributor"
+        }
+      }
+    });
+
+    res.status(200).json({ 
+      message: "Order approved successfully",
+      order
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Reject order
+export const rejectOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const { transactionId, approvedBy, rejectionReason } = req.body;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "Requested") {
+      return res.status(400).json({ message: "Order is not in requested state" });
+    }
+
+    // Update order status
+    order.status = "Rejected";
+    order.approvalTransactionId = transactionId;
+    order.approvalHashScanLink = `https://hashscan.io/testnet/transaction/${transactionId}`;
+    order.approvedBy = approvedBy;
+    order.rejectionReason = rejectionReason || "Not specified";
+    await order.save();
+
+    // Update drug status to make it available again
+    await Drug.findByIdAndUpdate(order.drugId, {
+      orderStatus: "None",
+      orderedBy: null
+    });
+
+    res.status(200).json({ 
+      message: "Order rejected successfully",
+      order
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get all orders (for admin dashboard)
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('drugId', 'name price quantity pctCode')
+      .sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 export const saveAdminDrugData = async (req, res) => {
   const { 
     name, price, expiryDate, countryOfOrigin, 
@@ -81,46 +185,7 @@ export const getAllAdminDrugs = async (req, res) => {
   }
 };
 // Use named exports
-export const approveUserRequest = async (req, res) => {
-    const { wallet } = req.body;
-    console.log("Received request body:", req.body); // Debug log
-  
-    try {
-      console.log("Approving user with wallet:", wallet);
-  
-      if (!wallet) {
-        return res.status(400).json({ message: "Wallet address is required" });
-      }
-  
-      // Check if the user exists in MongoDB
-      const user = await User.findOne({ wallet });
-      if (!user) {
-        console.log("User not found in MongoDB:", wallet);
-        return res.status(404).json({ message: "User not found in MongoDB" });
-      }
-  
-      // Approve the user in the Hedera smart contract
-      const approvalResult = await hederaService.approveUser(wallet);
-      console.log("Approval result from Hedera:", approvalResult);
-  
-      // Update the user in MongoDB
-      user.isApproved = true;
-      user.approvalTransactionId = approvalResult.transactionId;
-      user.approvalHashScanLink = approvalResult.hashScanLink;
-      await user.save();
-  
-      console.log("User approved successfully:", user); // Debug log
-  
-      res.status(200).json({
-        message: "User approved successfully",
-        hashScanLink: approvalResult.hashScanLink,
-        user,
-      });
-    } catch (error) {
-      console.error("Error approving user:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  };
+
 
 export const getPendingRequests = async (req, res) => {
   try {

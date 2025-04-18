@@ -6,10 +6,19 @@ import adminRoutes from "./routes/adminRoutes.js";
 import drugRoutes from "./routes/drugRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js"
+import orderRoutes from "./routes/orderRoutes.js"
 import session from "express-session";
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 
 
 const app = express();
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // CORS configuration
 app.use(cors({
   origin: "http://localhost:3000",
@@ -37,6 +46,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/drugs", drugRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/order", orderRoutes);
 
 
 // Database connection

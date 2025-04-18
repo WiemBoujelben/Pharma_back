@@ -17,6 +17,7 @@ const drugSchema = new mongoose.Schema({
     role: { type: String, required: true }
   }],
   status: { type: String, default: "Pending" },
+  orderStatus: { type: String, default: "None" }, 
   pctCode: { type: String },
   cid: { type: String }, // New field for IPFS content identifier
   qrCodePath: { type: String } // Path to the stored QR code image

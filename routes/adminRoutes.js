@@ -1,11 +1,18 @@
 import { Router } from "express";
-import { approveUserRequest, getPendingRequests ,getApprovedUsers,getInventory,getPendingDrugs,approveUser,rejectUser,saveAdminDrugData,getAllAdminDrugs} from "../controllers/adminController.js";
+import {getPendingRequests ,getPendingOrders,approveOrder,rejectOrder,getAllOrders,getApprovedUsers,getInventory,getPendingDrugs,approveUser,rejectUser,saveAdminDrugData,getAllAdminDrugs} from "../controllers/adminController.js";
 import { verifyAdmin } from "../middleware/authMiddleware.js"; // Import verifyAdmin
 import authController from "../controllers/authController.js"; // Import authController for checkManufacturer
 import fileUpload from 'express-fileupload';
 
 const router = Router();
 router.use(fileUpload());
+
+
+/////////////////Order management routes////////////////////
+router.get("/orders/pending", verifyAdmin, getPendingOrders);
+router.put("/orders/:orderId/approve", verifyAdmin, approveOrder);
+router.put("/orders/:orderId/reject", verifyAdmin, rejectOrder);
+router.get("/orders", verifyAdmin, getAllOrders);
 
 ///////////////user managment//////////////////
 router.get("/pending-requests", verifyAdmin, getPendingRequests);
